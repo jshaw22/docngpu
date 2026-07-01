@@ -20,7 +20,15 @@ import plotly.express as px
 import streamlit as st
 
 CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "availability.csv")
-N_REGIONS = 16  # DO regions; used as the heatmap's "fully available" ceiling
+
+# DO only offers GPU droplets in these regions; the rest are always unavailable
+# and just add noise / flatten the color gradient. We filter to these at display
+# time (the collector still logs all regions, so we're covered if DO adds one).
+GPU_REGIONS = ["nyc2", "sfo3", "atl1", "ric1", "tor1", "ams3"]
+
+# Visualization ceiling: treat 5+ available regions as "fully available" so the
+# common low counts (0-3) stay visually distinct instead of washing out.
+SCALE_CAP = 5
 
 st.set_page_config(page_title="DO GPU Availability", layout="wide")
 
@@ -33,10 +41,12 @@ def load():
     if df.empty:
         return df
     df["ts"] = pd.to_datetime(df["ts"], utc=True)
-    # Show times in local zone (US/Eastern by default — change if you like)
-    df["ts_local"] = df["ts"].dt.tz_convert("America/New_York")
+    # Show times in Pacific (handles PST/PDT automatically).
+    df["ts_local"] = df["ts"].dt.tz_convert("America/Los_Angeles")
     df["hour"] = df["ts_local"].dt.hour
     df["date"] = df["ts_local"].dt.date
+    # Keep only the regions DO actually offers GPUs in.
+    df = df[df["region_slug"].isin(GPU_REGIONS)].copy()
     # Friendly label per size, e.g. "H100 x8"
     df["gpu_label"] = (
         df["gpu_model"].str.replace("nvidia_", "", regex=False)
@@ -57,8 +67,8 @@ if df.empty:
 
 n_polls = df["ts"].nunique()
 st.caption(
-    f"{n_polls} poll(s) · {df['ts'].min():%Y-%m-%d %H:%M} → "
-    f"{df['ts'].max():%Y-%m-%d %H:%M} UTC · times shown in America/New_York"
+    f"{n_polls} poll(s) · {df['ts_local'].min():%Y-%m-%d %H:%M} → "
+    f"{df['ts_local'].max():%Y-%m-%d %H:%M} PT · {len(GPU_REGIONS)} GPU regions"
 )
 
 overview_tab, detail_tab = st.tabs(["📊 Overview — all GPUs", "🔍 Per-GPU detail"])
@@ -96,7 +106,7 @@ with overview_tab:
         snap, x="regions_now", y="gpu_label", orientation="h",
         text="available_in",
         labels=dict(regions_now="# regions available", gpu_label="GPU"),
-        range_x=[0, N_REGIONS],
+        range_x=[0, SCALE_CAP],
     )
     # Region names start inside the green bar; constraintext="none" lets a long
     # list overflow past a short bar instead of being shrunk to nothing.
@@ -118,15 +128,15 @@ with overview_tab:
     pivot = pivot.loc[order]
     fig_time = px.imshow(
         pivot,
-        color_continuous_scale="Greens", zmin=0, zmax=N_REGIONS, aspect="auto",
-        labels=dict(x="Time (ET)", y="GPU", color="# regions"),
+        color_continuous_scale="Greens", zmin=0, zmax=SCALE_CAP, aspect="auto",
+        labels=dict(x="Time (PT)", y="GPU", color="# regions"),
     )
     fig_time.update_xaxes(side="top")
     st.plotly_chart(fig_time, use_container_width=True)
     st.caption(
-        "Each cell = how many of the 16 regions had that GPU available at that "
-        "poll. Greener = more widely available; white/empty = none. "
-        "This is the all-GPU 'throughout the day' view — it fills in hourly."
+        f"Each cell = how many of the {len(GPU_REGIONS)} GPU regions had that GPU "
+        f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
+        "widely available; white/empty = none. Fills in hourly."
     )
 
 # =========================================================================
@@ -159,7 +169,7 @@ with detail_tab:
         fig = px.imshow(
             pivot, color_continuous_scale=[(0, "#2b2b3b"), (1, "#21c45d")],
             aspect="auto",
-            labels=dict(x="Time (ET)", y="Region", color="Available"),
+            labels=dict(x="Time (PT)", y="Region", color="Available"),
         )
         fig.update_coloraxes(showscale=False)
         fig.update_xaxes(side="top")
@@ -175,7 +185,7 @@ with detail_tab:
                               values="available").sort_index()
         fig2 = px.imshow(
             hod_pivot, color_continuous_scale="Greens", aspect="auto",
-            labels=dict(x="Hour of day (ET)", y="Region", color="% available"),
+            labels=dict(x="Hour of day (PT)", y="Region", color="% available"),
             zmin=0, zmax=1,
         )
         st.plotly_chart(fig2, use_container_width=True)
