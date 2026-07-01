@@ -1,11 +1,11 @@
 name: poll-gpu-availability
 
-# Hourly poll of DO GPU availability, committing results to availability.csv.
+# Half-hourly poll of DO GPU availability, committing results to availability.csv.
 on:
   schedule:
-    # Every hour at :07 (GitHub cron runs in UTC and is best-effort — it can be
-    # delayed several minutes under load, which is fine for hourly sampling).
-    - cron: "7 * * * *"
+    # At :07 and :37 (GitHub cron runs in UTC and is best-effort — it can be
+    # delayed several minutes under load, which is fine for sampling).
+    - cron: "7,37 * * * *"
   workflow_dispatch: {}   # lets you run it on demand from the Actions tab
 
 # Allow the job to push the updated CSV back to the repo.
