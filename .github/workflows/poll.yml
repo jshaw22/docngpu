@@ -1,0 +1,46 @@
+name: poll-gpu-availability
+
+# Hourly poll of DO GPU availability, committing results to availability.csv.
+on:
+  schedule:
+    # Every hour at :07 (GitHub cron runs in UTC and is best-effort — it can be
+    # delayed several minutes under load, which is fine for hourly sampling).
+    - cron: "7 * * * *"
+  workflow_dispatch: {}   # lets you run it on demand from the Actions tab
+
+# Allow the job to push the updated CSV back to the repo.
+permissions:
+  contents: write
+
+concurrency:
+  group: poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Poll DO GPU availability
+        env:
+          DO_COOKIE: ${{ secrets.DO_COOKIE }}
+        run: python gpu_monitor.py
+
+      - name: Commit new data
+        run: |
+          git config user.name "gpu-monitor-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add availability.csv
+          if git diff --staged --quiet; then
+            echo "No new data to commit."
+          else
+            git commit -m "data: poll $(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            # Rebase-pull guards against a race with a manual push.
+            git pull --rebase --autostash origin ${GITHUB_REF_NAME} || true
+            git push
+          fi

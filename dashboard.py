@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+DigitalOcean GPU availability dashboard.
+
+Reads availability.db (written by gpu_monitor.py) and visualizes which regions
+have which GPUs available over time.
+
+Two tabs:
+  - Overview: all GPUs on one page (summary + timeline).
+  - Per-GPU detail: drill into one size's regions.
+
+Run:
+    ./.venv/bin/streamlit run dashboard.py
+"""
+
+import os
+
+import pandas as pd
+import plotly.express as px
+import streamlit as st
+
+CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "availability.csv")
+N_REGIONS = 16  # DO regions; used as the heatmap's "fully available" ceiling
+
+st.set_page_config(page_title="DO GPU Availability", layout="wide")
+
+
+@st.cache_data(ttl=60)
+def load():
+    if not os.path.exists(CSV_PATH):
+        return pd.DataFrame()
+    df = pd.read_csv(CSV_PATH)
+    if df.empty:
+        return df
+    df["ts"] = pd.to_datetime(df["ts"], utc=True)
+    # Show times in local zone (US/Eastern by default — change if you like)
+    df["ts_local"] = df["ts"].dt.tz_convert("America/New_York")
+    df["hour"] = df["ts_local"].dt.hour
+    df["date"] = df["ts_local"].dt.date
+    # Friendly label per size, e.g. "H100 x8"
+    df["gpu_label"] = (
+        df["gpu_model"].str.replace("nvidia_", "", regex=False)
+        .str.replace("amd_", "", regex=False)
+        .str.upper()
+        + " x" + df["gpu_count"].astype(str)
+    )
+    return df
+
+
+df = load()
+
+st.title("🖥️  DigitalOcean GPU Droplet Availability")
+
+if df.empty:
+    st.warning("No data yet. Run `python3 gpu_monitor.py` first to log a poll.")
+    st.stop()
+
+n_polls = df["ts"].nunique()
+st.caption(
+    f"{n_polls} poll(s) · {df['ts'].min():%Y-%m-%d %H:%M} → "
+    f"{df['ts'].max():%Y-%m-%d %H:%M} UTC · times shown in America/New_York"
+)
+
+overview_tab, detail_tab = st.tabs(["📊 Overview — all GPUs", "🔍 Per-GPU detail"])
+
+# =========================================================================
+# OVERVIEW TAB — every GPU on one page
+# =========================================================================
+with overview_tab:
+    latest_ts = df["ts"].max()
+    now = df[df["ts"] == latest_ts]
+
+    # Per GPU: how many regions available right now (+ which ones).
+    snap = (
+        now.groupby("gpu_label")["available"].sum()
+        .reset_index(name="regions_now")
+    )
+    avail_regions = (
+        now[now["available"] == 1]
+        .groupby("gpu_label")["region_slug"]
+        .apply(lambda s: ", ".join(sorted(s)))
+    )
+    snap["available_in"] = snap["gpu_label"].map(avail_regions).fillna("")
+    snap = snap.sort_values("regions_now", ascending=False)
+
+    n_types_avail = int((snap["regions_now"] > 0).sum())
+    total_combos = int(now["available"].sum())
+
+    c1, c2 = st.columns(2)
+    c1.metric("GPU types available now", f"{n_types_avail} / {snap.shape[0]}")
+    c2.metric("Total GPU+region combos available", total_combos)
+
+    # Glanceable bar: regions available now, per GPU.
+    st.subheader("Available right now")
+    fig_now = px.bar(
+        snap, x="regions_now", y="gpu_label", orientation="h",
+        text="available_in",
+        labels=dict(regions_now="# regions available", gpu_label="GPU"),
+        range_x=[0, N_REGIONS],
+    )
+    # Region names start inside the green bar; constraintext="none" lets a long
+    # list overflow past a short bar instead of being shrunk to nothing.
+    fig_now.update_traces(
+        marker_color="#21c45d", textposition="inside",
+        insidetextanchor="start", constraintext="none", textfont_color="black",
+    )
+    fig_now.update_yaxes(categoryorder="total ascending")
+    st.plotly_chart(fig_now, use_container_width=True)
+
+    # Timeline heatmap: GPU (rows) x time (cols), color = # regions available.
+    st.subheader("Availability over time — all GPUs")
+    grid = (
+        df.groupby(["gpu_label", "ts_local"])["available"].sum().reset_index()
+    )
+    pivot = grid.pivot(index="gpu_label", columns="ts_local", values="available")
+    # Order rows so the most-available GPUs sit at the top.
+    order = pivot.sum(axis=1).sort_values(ascending=False).index
+    pivot = pivot.loc[order]
+    fig_time = px.imshow(
+        pivot,
+        color_continuous_scale="Greens", zmin=0, zmax=N_REGIONS, aspect="auto",
+        labels=dict(x="Time (ET)", y="GPU", color="# regions"),
+    )
+    fig_time.update_xaxes(side="top")
+    st.plotly_chart(fig_time, use_container_width=True)
+    st.caption(
+        "Each cell = how many of the 16 regions had that GPU available at that "
+        "poll. Greener = more widely available; white/empty = none. "
+        "This is the all-GPU 'throughout the day' view — it fills in hourly."
+    )
+
+# =========================================================================
+# DETAIL TAB — one GPU, region-level
+# =========================================================================
+with detail_tab:
+    sizes = sorted(df["gpu_label"].unique())
+    default_size = "H100 x8" if "H100 x8" in sizes else sizes[0]
+    size = st.selectbox("GPU size", sizes, index=sizes.index(default_size))
+    sdf = df[df["gpu_label"] == size].copy()
+    size_name = sdf["size_name"].iloc[0]
+    price = sdf["price_per_hour"].iloc[0]
+    st.caption(f"`{size_name}` · ${price}/hr")
+
+    now_sel = df[df["ts"] == df["ts"].max()]
+    now_sel = now_sel[now_sel["gpu_label"] == size]
+    avail_now = now_sel[now_sel["available"] == 1]["region_name"].tolist()
+    if avail_now:
+        st.success(f"**{size}** is available now in: {', '.join(avail_now)}")
+    else:
+        st.error(f"**{size}** is not available in any region right now.")
+
+    # Region x poll-time timeline.
+    st.subheader(f"Availability timeline — {size}")
+    pivot = (
+        sdf.pivot_table(index="region_slug", columns="ts_local",
+                        values="available", aggfunc="max").sort_index()
+    )
+    if pivot.shape[1] >= 1:
+        fig = px.imshow(
+            pivot, color_continuous_scale=[(0, "#2b2b3b"), (1, "#21c45d")],
+            aspect="auto",
+            labels=dict(x="Time (ET)", y="Region", color="Available"),
+        )
+        fig.update_coloraxes(showscale=False)
+        fig.update_xaxes(side="top")
+        st.plotly_chart(fig, use_container_width=True)
+        st.caption("Green = available, dark = sold out. Each column is one poll.")
+
+    # Hour-of-day pattern.
+    st.subheader(f"Availability by hour of day — {size}")
+    st.caption("Share of polls where the GPU was available, per region per hour.")
+    hod = sdf.groupby(["region_slug", "hour"])["available"].mean().reset_index()
+    if not hod.empty:
+        hod_pivot = hod.pivot(index="region_slug", columns="hour",
+                              values="available").sort_index()
+        fig2 = px.imshow(
+            hod_pivot, color_continuous_scale="Greens", aspect="auto",
+            labels=dict(x="Hour of day (ET)", y="Region", color="% available"),
+            zmin=0, zmax=1,
+        )
+        st.plotly_chart(fig2, use_container_width=True)
+
+    # Overall % by region.
+    st.subheader(f"Overall availability — {size}")
+    by_region = (
+        sdf.groupby("region_slug")["available"].mean()
+        .sort_values(ascending=False).reset_index()
+    )
+    by_region["pct"] = (by_region["available"] * 100).round(1)
+    fig3 = px.bar(by_region, x="region_slug", y="pct",
+                  labels=dict(region_slug="Region", pct="% of polls available"))
+    fig3.update_yaxes(range=[0, 100])
+    st.plotly_chart(fig3, use_container_width=True)

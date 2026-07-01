@@ -1,0 +1,10 @@
+secrets.env
+availability.db
+*.db
+__pycache__/
+*.pyc
+.venv/
+
+poll.log
+launchd.out.log
+launchd.err.log
