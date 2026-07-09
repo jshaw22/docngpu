@@ -35,16 +35,28 @@ st.set_page_config(page_title="DO GPU Availability", layout="wide")
 
 @st.cache_data(ttl=60)
 def load():
+    """Return (data_df, failed_ts): real poll rows, and local timestamps of
+    failed polls (NO_DATA sentinel rows written when e.g. the cookie expired)."""
+    empty = pd.DataFrame(), pd.DatetimeIndex([])
     if not os.path.exists(CSV_PATH):
-        return pd.DataFrame()
+        return empty
     df = pd.read_csv(CSV_PATH)
     if df.empty:
-        return df
+        return empty
     df["ts"] = pd.to_datetime(df["ts"], utc=True)
     # Show times in Pacific (handles PST/PDT automatically).
     df["ts_local"] = df["ts"].dt.tz_convert("America/Los_Angeles")
     df["hour"] = df["ts_local"].dt.hour
     df["date"] = df["ts_local"].dt.date
+    # Split off the failed-poll markers before any per-size processing.
+    failed = df["size_name"] == "NO_DATA"
+    failed_ts = pd.DatetimeIndex(df.loc[failed, "ts_local"].unique()).sort_values()
+    df = df[~failed].copy()
+    # NO_DATA rows have empty numeric fields, which makes pandas read these
+    # columns as float; restore ints so labels don't render as "x8.0".
+    if not df.empty:
+        df["gpu_count"] = df["gpu_count"].astype(int)
+        df["available"] = df["available"].astype(int)
     # Keep only the regions DO actually offers GPUs in.
     df = df[df["region_slug"].isin(GPU_REGIONS)].copy()
     # Friendly label per size, e.g. "H100 x8"
@@ -54,21 +66,47 @@ def load():
         .str.upper()
         + " x" + df["gpu_count"].astype(str)
     )
-    return df
+    return df, failed_ts
 
 
-df = load()
+def with_no_data_gaps(pivot, failed_ts):
+    """Insert failed-poll timestamps as all-NaN columns so heatmaps show an
+    explicit blank gap instead of silently skipping the time span."""
+    if len(failed_ts) == 0:
+        return pivot
+    return pivot.reindex(columns=pivot.columns.union(failed_ts).sort_values())
+
+
+df, failed_ts = load()
 
 st.title("🖥️  DigitalOcean GPU Droplet Availability")
 
 if df.empty:
-    st.warning("No data yet. Run `python3 gpu_monitor.py` first to log a poll.")
+    if len(failed_ts):
+        st.error(
+            f"All {len(failed_ts)} poll(s) so far failed (expired cookie?). "
+            "Refresh the cookie in secrets.env and run ./refresh_cookie.sh."
+        )
+    else:
+        st.warning("No data yet. Run `python3 gpu_monitor.py` first to log a poll.")
     st.stop()
 
+# If polls have failed since the last good one, the "now" numbers are stale.
+last_good = df["ts_local"].max()
+stale_fails = failed_ts[failed_ts > last_good]
+if len(stale_fails):
+    st.warning(
+        f"⚠️ The last {len(stale_fails)} poll(s) failed — cookie has likely "
+        f"expired. Data below is as of {last_good:%Y-%m-%d %H:%M} PT. "
+        "Refresh the cookie in secrets.env and run ./refresh_cookie.sh."
+    )
+
 n_polls = df["ts"].nunique()
+failed_note = f" · {len(failed_ts)} failed poll(s)" if len(failed_ts) else ""
 st.caption(
     f"{n_polls} poll(s) · {df['ts_local'].min():%Y-%m-%d %H:%M} → "
     f"{df['ts_local'].max():%Y-%m-%d %H:%M} PT · {len(GPU_REGIONS)} GPU regions"
+    f"{failed_note}"
 )
 
 overview_tab, detail_tab = st.tabs(["📊 Overview — all GPUs", "🔍 Per-GPU detail"])
@@ -126,6 +164,7 @@ with overview_tab:
     # Order rows so the most-available GPUs sit at the top.
     order = pivot.sum(axis=1).sort_values(ascending=False).index
     pivot = pivot.loc[order]
+    pivot = with_no_data_gaps(pivot, failed_ts)
     fig_time = px.imshow(
         pivot,
         color_continuous_scale="Greens", zmin=0, zmax=SCALE_CAP, aspect="auto",
@@ -136,7 +175,8 @@ with overview_tab:
     st.caption(
         f"Each cell = how many of the {len(GPU_REGIONS)} GPU regions had that GPU "
         f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
-        "widely available; white/empty = none. Fills in hourly."
+        "widely available; white/empty = none. Blank (transparent) columns = "
+        "poll failed, no data. Fills in hourly."
     )
 
 # =========================================================================
@@ -165,6 +205,7 @@ with detail_tab:
         sdf.pivot_table(index="region_slug", columns="ts_local",
                         values="available", aggfunc="max").sort_index()
     )
+    pivot = with_no_data_gaps(pivot, failed_ts)
     if pivot.shape[1] >= 1:
         fig = px.imshow(
             pivot, color_continuous_scale=[(0, "#2b2b3b"), (1, "#21c45d")],
@@ -174,7 +215,8 @@ with detail_tab:
         fig.update_coloraxes(showscale=False)
         fig.update_xaxes(side="top")
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("Green = available, dark = sold out. Each column is one poll.")
+        st.caption("Green = available, dark = sold out, blank = poll failed "
+                   "(no data). Each column is one poll.")
 
     # Hour-of-day pattern.
     st.subheader(f"Availability by hour of day — {size}")

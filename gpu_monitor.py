@@ -185,6 +185,13 @@ def write_csv(rows, path=CSV_PATH):
         w.writerows(rows)
 
 
+def write_no_data(ts, path=CSV_PATH):
+    """Append a sentinel row marking a failed poll (expired cookie, network
+    error, ...) so downstream consumers can tell 'no data' apart from a poll
+    that never ran. Every field except ts is empty; size_name is 'NO_DATA'."""
+    write_csv([(ts, "NO_DATA", "", "", "", "", "", "", "", "")], path)
+
+
 def print_summary(rows, ts):
     available = [r for r in rows if r[9] == 1]
     n_sizes = len({r[1] for r in rows})
@@ -203,7 +210,15 @@ def print_summary(rows, ts):
 def poll_once(write=True):
     cookie = load_cookie()
     ts = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-    opts = fetch(cookie)
+    try:
+        opts = fetch(cookie)
+    except SystemExit as e:
+        # Record the failed poll so the gap shows up as "no data" downstream,
+        # then re-raise so callers (and CI) still see a non-zero exit.
+        if write:
+            write_no_data(ts)
+            print(f"[{ts}] poll failed — wrote NO_DATA row", file=sys.stderr)
+        raise
     rows = parse_rows(opts, ts)
     if write:
         write_csv(rows)

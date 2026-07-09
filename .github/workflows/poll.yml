@@ -26,7 +26,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      # continue-on-error so a failed poll (expired cookie) still reaches the
+      # commit step — gpu_monitor.py writes a NO_DATA row before exiting
+      # non-zero, and we want that row committed. A final step re-fails the
+      # run so the failure is still visible / notifies by email.
       - name: Poll DO GPU availability
+        id: poll
+        continue-on-error: true
         env:
           DO_COOKIE: ${{ secrets.DO_COOKIE }}
         run: python gpu_monitor.py
@@ -44,3 +50,9 @@ jobs:
             git pull --rebase --autostash origin ${GITHUB_REF_NAME} || true
             git push
           fi
+
+      - name: Surface poll failure
+        if: steps.poll.outcome == 'failure'
+        run: |
+          echo "::error::Poll failed — DO_COOKIE has likely expired. A NO_DATA row was committed. Refresh the cookie and run ./refresh_cookie.sh"
+          exit 1
