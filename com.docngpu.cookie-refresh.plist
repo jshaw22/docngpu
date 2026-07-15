@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.docngpu.cookie-refresh</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Users/justinshaw/Documents/docngpu/.venv/bin/python</string>
+        <string>/Users/justinshaw/Documents/docngpu/refresh_cookie.py</string>
+    </array>
+
+    <!-- Every 30 min while awake; launchd coalesces missed runs into one
+         catch-up run shortly after wake, which is exactly what we want. -->
+    <key>StartInterval</key>
+    <integer>1800</integer>
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- gh lives in /usr/local/bin; launchd's default PATH omits it. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/justinshaw/Documents/docngpu/cookie_refresh.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/justinshaw/Documents/docngpu/cookie_refresh.log</string>
+</dict>
+</plist>

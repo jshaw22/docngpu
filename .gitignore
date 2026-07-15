@@ -8,3 +8,4 @@ __pycache__/
 poll.log
 launchd.out.log
 launchd.err.log
+cookie_refresh.log
