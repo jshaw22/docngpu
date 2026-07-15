@@ -88,6 +88,37 @@ def logged_in(page):
     return "cloud.digitalocean.com" in page.url and "/login" not in page.url
 
 
+def try_prefill_click(page):
+    """If Chrome's saved-password autofill populates the login form, click
+    Log In. Chrome only commits autofill after a trusted user gesture, and a
+    CDP-driven click counts as one. Returns True if we clicked; False means
+    fall back to a manual login (never raises)."""
+    try:
+        if not (page.locator("#email").count() and page.locator("#password").count()):
+            return False
+        page.locator("#email").click(timeout=3_000)
+        for _ in range(10):  # give autofill up to ~5s to land
+            filled = page.evaluate(
+                """() => {
+                    const af = el => {
+                        if (!el) return false;
+                        if (el.value && el.value.length > 0) return true;
+                        try { return el.matches(':-webkit-autofill'); }
+                        catch { return false; }
+                    };
+                    return af(document.querySelector('#email'))
+                        && af(document.querySelector('#password'));
+                }"""
+            )
+            if filled:
+                page.click('button[type="submit"]', timeout=5_000)
+                return True
+            page.wait_for_timeout(500)
+    except Exception as e:
+        log(f"prefill check failed ({e}); falling back to manual login")
+    return False
+
+
 def saved_cookies():
     """Cookies to re-inject at launch: last saved browser state, else bootstrap
     from the COOKIE header in secrets.env (no domain info there, so pin them
@@ -147,7 +178,13 @@ def mint_cookie(headed=False):
                             "Re-run with --login to sign in again."
                         )
                 else:
-                    log("Waiting for you to log into DigitalOcean in the Chrome window...")
+                    if try_prefill_click(page):
+                        log("Saved password prefilled — clicked Log In for you...")
+                    else:
+                        log("Waiting for you to log into DigitalOcean in the Chrome window...")
+                    # Whether we clicked or the user does, wait for the same
+                    # signal: leaving the login page. If the auto-click didn't
+                    # take (2FA, captcha, bad fill), just log in manually.
                     page.wait_for_url(
                         lambda url: "cloud.digitalocean.com" in url and "/login" not in url,
                         timeout=LOGIN_WAIT_S * 1_000,
