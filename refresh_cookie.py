@@ -95,17 +95,19 @@ def try_prefill_click(page):
     actually empty, DO just shows a validation error and we fall back to a
     manual login. Returns True once we've left the login page (never raises)."""
     try:
-        if not page.locator("#email").count():
-            return False
+        # The login page is an SPA — the form renders well after page "load".
+        page.wait_for_selector("#email", timeout=15_000)
         page.locator("#email").click(timeout=3_000)
         page.wait_for_timeout(2_000)  # let the autofill commit
+        log("auto-submit: form found, clicking Log In...")
         page.click('button[type="submit"]', timeout=5_000)
         page.wait_for_url(
             lambda url: "cloud.digitalocean.com" in url and "/login" not in url,
             timeout=15_000,
         )
         return True
-    except Exception:
+    except Exception as e:
+        log(f"auto-submit gave up at: {type(e).__name__}")
         return False
 
 
