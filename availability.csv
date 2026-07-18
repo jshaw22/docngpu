@@ -17990,3 +17990,156 @@ ts,size_name,gpu_model,gpu_count,vram_gib,price_per_hour,region_id,region_slug,r
 2026-07-17T23:30:59+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,16,atl1,Atlanta 1,0
 2026-07-17T23:30:59+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,17,ric1,Richmond 1,0
 2026-07-17T23:30:59+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-4000adax1-20gb,nvidia_rtx4000_ada,1,20,0.76,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-l40sx1-48gb,nvidia_l40s,1,48,1.57,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-6000adax1-48gb,nvidia_rtx6000_ada,1,48,1.57,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x1-192gb,amd_mi300x,1,192,1.99,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,9,ams3,Amsterdam 3,1
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,11,tor1,Toronto 1,1
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x1-80gb,nvidia_h100,1,80,3.39,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,4,nyc2,New York 2,1
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,16,atl1,Atlanta 1,1
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x1-141gb,nvidia_h200,1,141,3.44,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-mi300x8-1536gb,amd_mi300x,8,1536,15.92,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-h100x8-640gb,nvidia_h100,8,640,23.92,18,mkc1,Kansas City 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,1,nyc1,New York 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,3,sfo1,San Francisco 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,4,nyc2,New York 2,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,5,ams2,Amsterdam 2,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,6,sgp1,Singapore 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,7,lon1,London 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,8,nyc3,New York 3,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,9,ams3,Amsterdam 3,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,10,fra1,Frankfurt 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,11,tor1,Toronto 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,12,sfo2,San Francisco 2,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,13,blr1,Bangalore 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,14,sfo3,San Francisco 3,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,15,syd1,Sydney 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,16,atl1,Atlanta 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,17,ric1,Richmond 1,0
+2026-07-18T01:02:50+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,27.52,18,mkc1,Kansas City 1,0
