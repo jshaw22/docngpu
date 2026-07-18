@@ -95,9 +95,12 @@ def try_prefill_click(page):
     actually empty, DO just shows a validation error and we fall back to a
     manual login. Returns True once we've left the login page (never raises)."""
     try:
-        # The login page is an SPA — the form renders well after page "load".
-        page.wait_for_selector("#email", timeout=15_000)
-        page.locator("#email").click(timeout=3_000)
+        # The login page is an SPA and renders well after page "load". Fresh
+        # contexts get the full email+password form; returning users (with the
+        # remember-me cookie) get a "welcome back" variant that has an account
+        # tile and a prefilled #password — no #email at all. Wait for either.
+        field = page.wait_for_selector("#password, #email", timeout=20_000)
+        field.click()
         page.wait_for_timeout(2_000)  # let the autofill commit
         log("auto-submit: form found, clicking Log In...")
         page.click('button[type="submit"]', timeout=5_000)
@@ -107,7 +110,24 @@ def try_prefill_click(page):
         )
         return True
     except Exception as e:
-        log(f"auto-submit gave up at: {type(e).__name__}")
+        # Snapshot what the login page actually looks like at the moment of
+        # failure — the selectors were derived from a clean-context login form,
+        # and returning users may get a different variant entirely.
+        try:
+            page.screenshot(path=os.path.expanduser("~/.docngpu/login_debug.png"))
+            elements = page.evaluate(
+                """() => [...document.querySelectorAll('input, button, a[role=button]')]
+                    .map(el => ({tag: el.tagName, type: el.type || null,
+                                 id: el.id || null, name: el.name || null,
+                                 text: el.tagName === 'INPUT'
+                                     ? '<masked>'  // never capture field values
+                                     : (el.innerText || '').slice(0, 60)}))"""
+            )
+            with open(os.path.expanduser("~/.docngpu/login_debug.json"), "w") as fh:
+                json.dump({"url": page.url, "elements": elements}, fh, indent=1)
+            log(f"auto-submit gave up at: {type(e).__name__} — debug snapshot saved")
+        except Exception:
+            log(f"auto-submit gave up at: {type(e).__name__} (no snapshot)")
         return False
 
 
