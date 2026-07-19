@@ -32,6 +32,7 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 
 from playwright.sync_api import TimeoutError as PWTimeout
 from playwright.sync_api import sync_playwright
@@ -252,8 +253,20 @@ def main():
     header = mint_cookie(headed=args.login)
 
     # Validate against the real endpoint before touching secrets anywhere.
-    # gpu_monitor.fetch raises SystemExit with a clear message on failure.
-    opts = gpu_monitor.fetch(header)
+    # gpu_monitor.fetch raises SystemExit on definitive failures (401 etc.);
+    # transient network errors (timeouts, resets) get a few retries so a slow
+    # request doesn't throw away a successful login.
+    for attempt in range(1, 4):
+        try:
+            opts = gpu_monitor.fetch(header)
+            break
+        except SystemExit:
+            raise  # auth is genuinely bad — retrying won't change that
+        except Exception as e:
+            if attempt == 3:
+                raise
+            log(f"validation attempt {attempt} failed ({e}); retrying in 10s...")
+            time.sleep(10)
     n_sizes = len([s for s in opts.get("sizes", []) if s.get("gpu_info")])
     log(f"Cookie validated against GraphQL ({n_sizes} GPU sizes visible)")
 
