@@ -30,15 +30,37 @@ GPU_REGIONS = ["nyc2", "sfo3", "atl1", "ric1", "tor1", "ams3"]
 # common low counts (0-3) stay visually distinct instead of washing out.
 SCALE_CAP = 5
 
-# Sold-out cells render red so "polled fine, zero capacity" is obviously
-# different from the blank/transparent gaps left by failed polls.
-ZERO_RED = "#d13438"
-# Greens ramp with exact zeros pinned to red. Cell values are whole region
-# counts, so a breakpoint at 0.5 regions only ever captures true zeros.
-ZERO_RED_GREENS = [
-    (0.0, ZERO_RED), (0.5 / SCALE_CAP, ZERO_RED),
-    (0.5 / SCALE_CAP, "#c7e9c0"), (1.0, "#00441b"),
+# Red is reserved for total outages: a poll where NOTHING in the chart was
+# available (vs. blank/transparent = poll failed, and white/dark = just this
+# row sold out). Zeros in those columns are replaced with the OUTAGE sentinel
+# so a colorscale breakpoint can catch them without touching ordinary zeros.
+OUTAGE_RED = "#d13438"
+OUTAGE = -1
+
+# Greens ramp over [-1, SCALE_CAP]: -1 → red, 0 → white, 1+ → light-to-dark
+# green. Values are whole counts, so breakpoints at ±0.5 never split a value.
+_SPAN = SCALE_CAP - OUTAGE
+OUTAGE_GREENS = [
+    (0.0, OUTAGE_RED), (0.5 / _SPAN, OUTAGE_RED),
+    (0.5 / _SPAN, "#f7fcf5"), (1.5 / _SPAN, "#f7fcf5"),
+    (2.0 / _SPAN, "#c7e9c0"), (1.0, "#00441b"),
 ]
+
+# Same idea for the binary region timeline: -1 → red, 0 → dark, 1 → green.
+OUTAGE_BINARY = [
+    (0.0, OUTAGE_RED), (0.25, OUTAGE_RED),
+    (0.25, "#2b2b3b"), (0.75, "#2b2b3b"),
+    (0.75, "#21c45d"), (1.0, "#21c45d"),
+]
+
+
+def mark_total_outages(pivot):
+    """Replace 0 with the OUTAGE sentinel in columns whose maximum is 0 —
+    i.e. polls where nothing in this chart was available at all."""
+    dead = pivot.max(axis=0) == 0
+    out = pivot.copy()
+    out.loc[:, dead] = out.loc[:, dead].replace(0, OUTAGE)
+    return out
 
 st.set_page_config(page_title="DO GPU Availability", layout="wide")
 
@@ -176,18 +198,27 @@ with overview_tab:
     pivot = pivot.loc[order]
     pivot = with_no_data_gaps(pivot, failed_ts)
     fig_time = px.imshow(
-        pivot,
-        color_continuous_scale=ZERO_RED_GREENS, zmin=0, zmax=SCALE_CAP,
+        mark_total_outages(pivot),
+        color_continuous_scale=OUTAGE_GREENS, zmin=OUTAGE, zmax=SCALE_CAP,
         aspect="auto",
         labels=dict(x="Time (PT)", y="GPU", color="# regions"),
     )
     fig_time.update_xaxes(side="top")
+    # Hover shows the real count (0), not the -1 sentinel; keep the sentinel
+    # off the colorbar ticks too.
+    fig_time.update_traces(
+        customdata=pivot.values,
+        hovertemplate="Time=%{x}<br>GPU=%{y}<br># regions=%{customdata}"
+                      "<extra></extra>",
+    )
+    fig_time.update_coloraxes(colorbar_tickvals=list(range(SCALE_CAP + 1)))
     st.plotly_chart(fig_time, use_container_width=True)
     st.caption(
         f"Each cell = how many of the {len(GPU_REGIONS)} GPU regions had that GPU "
         f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
-        "widely available; red = sold out in every region. Blank (transparent) "
-        "columns = poll failed, no data. Fills in hourly."
+        "widely available; white = that GPU sold out; red column = nothing "
+        "available anywhere. Blank (transparent) columns = poll failed, no "
+        "data. Fills in hourly."
     )
 
 # =========================================================================
@@ -219,15 +250,22 @@ with detail_tab:
     pivot = with_no_data_gaps(pivot, failed_ts)
     if pivot.shape[1] >= 1:
         fig = px.imshow(
-            pivot, color_continuous_scale=[(0, ZERO_RED), (1, "#21c45d")],
+            mark_total_outages(pivot),
+            color_continuous_scale=OUTAGE_BINARY, zmin=OUTAGE, zmax=1,
             aspect="auto",
             labels=dict(x="Time (PT)", y="Region", color="Available"),
         )
         fig.update_coloraxes(showscale=False)
         fig.update_xaxes(side="top")
+        fig.update_traces(
+            customdata=pivot.values,
+            hovertemplate="Time=%{x}<br>Region=%{y}<br>Available=%{customdata}"
+                          "<extra></extra>",
+        )
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("Green = available, red = sold out, blank = poll failed "
-                   "(no data). Each column is one poll.")
+        st.caption("Green = available, dark = sold out, red = sold out in "
+                   "every region at once, blank = poll failed (no data). "
+                   "Each column is one poll.")
 
     # Hour-of-day pattern.
     st.subheader(f"Availability by hour of day — {size}")
