@@ -30,6 +30,16 @@ GPU_REGIONS = ["nyc2", "sfo3", "atl1", "ric1", "tor1", "ams3"]
 # common low counts (0-3) stay visually distinct instead of washing out.
 SCALE_CAP = 5
 
+# Sold-out cells render red so "polled fine, zero capacity" is obviously
+# different from the blank/transparent gaps left by failed polls.
+ZERO_RED = "#d13438"
+# Greens ramp with exact zeros pinned to red. Cell values are whole region
+# counts, so a breakpoint at 0.5 regions only ever captures true zeros.
+ZERO_RED_GREENS = [
+    (0.0, ZERO_RED), (0.5 / SCALE_CAP, ZERO_RED),
+    (0.5 / SCALE_CAP, "#c7e9c0"), (1.0, "#00441b"),
+]
+
 st.set_page_config(page_title="DO GPU Availability", layout="wide")
 
 
@@ -167,7 +177,8 @@ with overview_tab:
     pivot = with_no_data_gaps(pivot, failed_ts)
     fig_time = px.imshow(
         pivot,
-        color_continuous_scale="Greens", zmin=0, zmax=SCALE_CAP, aspect="auto",
+        color_continuous_scale=ZERO_RED_GREENS, zmin=0, zmax=SCALE_CAP,
+        aspect="auto",
         labels=dict(x="Time (PT)", y="GPU", color="# regions"),
     )
     fig_time.update_xaxes(side="top")
@@ -175,8 +186,8 @@ with overview_tab:
     st.caption(
         f"Each cell = how many of the {len(GPU_REGIONS)} GPU regions had that GPU "
         f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
-        "widely available; white/empty = none. Blank (transparent) columns = "
-        "poll failed, no data. Fills in hourly."
+        "widely available; red = sold out in every region. Blank (transparent) "
+        "columns = poll failed, no data. Fills in hourly."
     )
 
 # =========================================================================
@@ -208,14 +219,14 @@ with detail_tab:
     pivot = with_no_data_gaps(pivot, failed_ts)
     if pivot.shape[1] >= 1:
         fig = px.imshow(
-            pivot, color_continuous_scale=[(0, "#2b2b3b"), (1, "#21c45d")],
+            pivot, color_continuous_scale=[(0, ZERO_RED), (1, "#21c45d")],
             aspect="auto",
             labels=dict(x="Time (PT)", y="Region", color="Available"),
         )
         fig.update_coloraxes(showscale=False)
         fig.update_xaxes(side="top")
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("Green = available, dark = sold out, blank = poll failed "
+        st.caption("Green = available, red = sold out, blank = poll failed "
                    "(no data). Each column is one poll.")
 
     # Hour-of-day pattern.
