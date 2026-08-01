@@ -101,12 +101,50 @@ def load():
     return df, failed_ts
 
 
-def with_no_data_gaps(pivot, failed_ts):
-    """Insert failed-poll timestamps as all-NaN columns so heatmaps show an
-    explicit blank gap instead of silently skipping the time span."""
-    if len(failed_ts) == 0:
-        return pivot
-    return pivot.reindex(columns=pivot.columns.union(failed_ts).sort_values())
+def collapse_no_data_gaps(pivot, failed_ts):
+    """Re-key the pivot to one equal-width column per poll (categorical axis),
+    collapsing each stretch of consecutive failed polls into a single all-NaN
+    column. Outages stay visible as an explicit blank gap, but a 14-hour one
+    no longer sprawls across the chart; the label carries the real span."""
+    events = sorted(
+        [(ts, ts) for ts in pivot.columns] + [(ts, None) for ts in failed_ts]
+    )
+    cols = {}
+    i = 0
+    while i < len(events):
+        ts, src = events[i]
+        if src is not None:
+            label = f"{ts:%m-%d %H:%M}"
+            column = pivot[src]
+            i += 1
+        else:
+            j = i
+            while j < len(events) and events[j][1] is None:
+                j += 1
+            start, end = events[i][0], events[j - 1][0]
+            if j - i == 1:
+                label = f"✕ missed {start:%m-%d %H:%M}"
+            else:
+                end_fmt = "%H:%M" if end.date() == start.date() else "%m-%d %H:%M"
+                label = f"✕ {j - i} missed {start:%m-%d %H:%M} → {end:{end_fmt}}"
+            column = pd.Series(float("nan"), index=pivot.index)
+            i = j
+        while label in cols:  # e.g. two polls in the same minute
+            label += " "
+        cols[label] = column
+    return pd.DataFrame(cols, index=pivot.index)
+
+
+def day_ticks(columns):
+    """One tick per calendar day — a categorical axis would otherwise label
+    every poll column. Gap columns never get a tick (hover still has them)."""
+    tickvals, seen = [], set()
+    for lbl in columns:
+        if lbl.startswith("✕") or lbl[:5] in seen:
+            continue
+        seen.add(lbl[:5])
+        tickvals.append(lbl)
+    return tickvals, [lbl[:5] for lbl in tickvals]
 
 
 df, failed_ts = load()
@@ -196,14 +234,16 @@ with overview_tab:
     # Order rows so the most-available GPUs sit at the top.
     order = pivot.sum(axis=1).sort_values(ascending=False).index
     pivot = pivot.loc[order]
-    pivot = with_no_data_gaps(pivot, failed_ts)
+    pivot = collapse_no_data_gaps(pivot, failed_ts)
     fig_time = px.imshow(
         mark_total_outages(pivot),
         color_continuous_scale=OUTAGE_GREENS, zmin=OUTAGE, zmax=SCALE_CAP,
         aspect="auto",
         labels=dict(x="Time (PT)", y="GPU", color="# regions"),
     )
-    fig_time.update_xaxes(side="top")
+    tickvals, ticktext = day_ticks(pivot.columns)
+    fig_time.update_xaxes(side="top", tickvals=tickvals, ticktext=ticktext,
+                          tickangle=45)
     # Hover shows the real count (0), not the -1 sentinel; keep the sentinel
     # off the colorbar ticks too.
     fig_time.update_traces(
@@ -217,8 +257,9 @@ with overview_tab:
         f"Each cell = how many of the {len(GPU_REGIONS)} GPU regions had that GPU "
         f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
         "widely available; white = that GPU sold out; red column = nothing "
-        "available anywhere. Blank (transparent) columns = poll failed, no "
-        "data. Fills in hourly."
+        "available anywhere. Blank ✕ columns = failed polls, collapsed to one "
+        "column per outage however long it ran (hover for the span). Fills "
+        "in hourly."
     )
 
 # =========================================================================
@@ -247,7 +288,7 @@ with detail_tab:
         sdf.pivot_table(index="region_slug", columns="ts_local",
                         values="available", aggfunc="max").sort_index()
     )
-    pivot = with_no_data_gaps(pivot, failed_ts)
+    pivot = collapse_no_data_gaps(pivot, failed_ts)
     if pivot.shape[1] >= 1:
         fig = px.imshow(
             mark_total_outages(pivot),
@@ -256,7 +297,9 @@ with detail_tab:
             labels=dict(x="Time (PT)", y="Region", color="Available"),
         )
         fig.update_coloraxes(showscale=False)
-        fig.update_xaxes(side="top")
+        tickvals, ticktext = day_ticks(pivot.columns)
+        fig.update_xaxes(side="top", tickvals=tickvals, ticktext=ticktext,
+                         tickangle=45)
         fig.update_traces(
             customdata=pivot.values,
             hovertemplate="Time=%{x}<br>Region=%{y}<br>Available=%{customdata}"
@@ -264,8 +307,8 @@ with detail_tab:
         )
         st.plotly_chart(fig, use_container_width=True)
         st.caption("Green = available, dark = sold out, red = sold out in "
-                   "every region at once, blank = poll failed (no data). "
-                   "Each column is one poll.")
+                   "every region at once, blank ✕ = failed polls (one column "
+                   "per outage, however long). Each column is one poll.")
 
     # Hour-of-day pattern.
     st.subheader(f"Availability by hour of day — {size}")
