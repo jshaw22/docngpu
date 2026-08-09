@@ -38454,3 +38454,4 @@ ts,size_name,gpu_model,gpu_count,vram_gib,price_per_hour,region_id,region_slug,r
 2026-08-09T04:02:55+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,35.76,16,atl1,Atlanta 1,0
 2026-08-09T04:02:55+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,35.76,17,ric1,Richmond 1,0
 2026-08-09T04:02:55+00:00,gpu-h200x8-1128gb,nvidia_h200,8,1128,35.76,18,mkc1,Kansas City 1,0
+2026-08-09T05:15:15+00:00,NO_DATA,,,,,,,,
