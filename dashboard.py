@@ -21,11 +21,6 @@ import streamlit as st
 
 CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "availability.csv")
 
-# DO only offers GPU droplets in these regions; the rest are always unavailable
-# and just add noise / flatten the color gradient. We filter to these at display
-# time (the collector still logs all regions, so we're covered if DO adds one).
-GPU_REGIONS = ["nyc2", "sfo3", "atl1", "ric1", "tor1", "ams3"]
-
 # Visualization ceiling: treat 5+ available regions as "fully available" so the
 # common low counts (0-3) stay visually distinct instead of washing out.
 SCALE_CAP = 5
@@ -89,14 +84,22 @@ def load():
     if not df.empty:
         df["gpu_count"] = df["gpu_count"].astype(int)
         df["available"] = df["available"].astype(int)
-    # Keep only the regions DO actually offers GPUs in.
-    df = df[df["region_slug"].isin(GPU_REGIONS)].copy()
-    # Friendly label per size, e.g. "H100 x8"
+    # Keep only regions where some GPU has ever been available during our
+    # polling; the rest are permanent zeros that just add noise. Derived from
+    # the data (not hardcoded) so when DO lights up a new GPU region — e.g.
+    # mkc1/mem1 for the B300/MI355X spot SKUs — it appears automatically.
+    gpu_regions = df.loc[df["available"] == 1, "region_slug"].unique()
+    df = df[df["region_slug"].isin(gpu_regions)].copy()
+    # Friendly label per size, e.g. "H100 x8". Include the SKU variant suffix
+    # ("spot", "lc-spot", ...) — B300 has spot and lc-spot SKUs with the same
+    # model+count, which would otherwise collapse into one row.
+    variant = df["size_name"].str.extract(r"\dgb-(.+)$", expand=False)
     df["gpu_label"] = (
         df["gpu_model"].str.replace("nvidia_", "", regex=False)
         .str.replace("amd_", "", regex=False)
         .str.upper()
         + " x" + df["gpu_count"].astype(str)
+        + variant.map(lambda v: "" if pd.isna(v) else f" ({v})")
     )
     return df, failed_ts
 
@@ -172,10 +175,11 @@ if len(stale_fails):
     )
 
 n_polls = df["ts"].nunique()
+n_regions = df["region_slug"].nunique()
 failed_note = f" · {len(failed_ts)} failed poll(s)" if len(failed_ts) else ""
 st.caption(
     f"{n_polls} poll(s) · {df['ts_local'].min():%Y-%m-%d %H:%M} → "
-    f"{df['ts_local'].max():%Y-%m-%d %H:%M} PT · {len(GPU_REGIONS)} GPU regions"
+    f"{df['ts_local'].max():%Y-%m-%d %H:%M} PT · {n_regions} GPU regions"
     f"{failed_note}"
 )
 
@@ -254,7 +258,7 @@ with overview_tab:
     fig_time.update_coloraxes(colorbar_tickvals=list(range(SCALE_CAP + 1)))
     st.plotly_chart(fig_time, use_container_width=True)
     st.caption(
-        f"Each cell = how many of the {len(GPU_REGIONS)} GPU regions had that GPU "
+        f"Each cell = how many of the {n_regions} GPU regions had that GPU "
         f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
         "widely available; white = that GPU sold out; red column = nothing "
         "available anywhere. Blank ✕ columns = failed polls, collapsed to one "
