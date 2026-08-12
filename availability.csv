@@ -50639,3 +50639,4 @@ ts,size_name,gpu_model,gpu_count,vram_gib,price_per_hour,region_id,region_slug,r
 2026-08-12T04:56:46+00:00,gpu-b300x8-2304gb-spot,nvidia_b300,8,2304,89.52,17,ric1,Richmond 1,0
 2026-08-12T04:56:46+00:00,gpu-b300x8-2304gb-spot,nvidia_b300,8,2304,89.52,18,mkc1,Kansas City 1,0
 2026-08-12T04:56:46+00:00,gpu-b300x8-2304gb-spot,nvidia_b300,8,2304,89.52,19,mem1,Memphis 1,0
+2026-08-12T06:38:11+00:00,NO_DATA,,,,,,,,
