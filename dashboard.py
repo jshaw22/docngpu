@@ -229,6 +229,29 @@ with overview_tab:
     fig_now.update_yaxes(categoryorder="total ascending")
     st.plotly_chart(fig_now, use_container_width=True)
 
+    # Total combos over time: one point per poll, gaps where polls failed so
+    # an outage reads as a hole in the line rather than a flat interpolation.
+    st.subheader("Total GPU+region combos over time")
+    totals = df.groupby("ts_local")["available"].sum()
+    totals = pd.concat(
+        [totals, pd.Series(float("nan"), index=failed_ts)]
+    ).sort_index()
+    fig_total = px.line(
+        x=totals.index, y=totals.values,
+        labels=dict(x="Time (PT)", y="# combos available"),
+    )
+    fig_total.update_traces(
+        line_color="#21c45d", line_width=2,
+        hovertemplate="Time=%{x|%m-%d %H:%M}<br># combos=%{y}<extra></extra>",
+    )
+    fig_total.update_yaxes(rangemode="tozero")
+    st.plotly_chart(fig_total, use_container_width=True)
+    st.caption(
+        "Sum of every GPU size × region pair available at each poll — the "
+        "same number as the metric above, tracked over time. Line breaks = "
+        "failed polls."
+    )
+
     # Timeline heatmap: GPU (rows) x time (cols), color = # regions available.
     st.subheader("Availability over time — all GPUs")
     grid = (
