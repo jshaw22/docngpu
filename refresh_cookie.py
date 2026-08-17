@@ -240,6 +240,16 @@ def push_secret(header):
         [gh, "secret", "set", "DO_COOKIE"],
         input=header, text=True, cwd=HERE, check=True, capture_output=True,
     )
+    # Also push the full cookie jar: the CI self-heal (cookie_heal.py) needs
+    # the remember-me token from DO_STATE to re-mint dead sessions on its own.
+    if os.path.exists(STATE_PATH):
+        with open(STATE_PATH) as fh:
+            cookies = json.load(fh).get("cookies", [])
+        subprocess.run(
+            [gh, "secret", "set", "DO_STATE"],
+            input=json.dumps(cookies), text=True, cwd=HERE, check=True,
+            capture_output=True,
+        )
 
 
 def main():

@@ -19,6 +19,9 @@ concurrency:
 jobs:
   poll:
     runs-on: ubuntu-latest
+    # Job-level so step `if:` conditions can check the secret is configured.
+    env:
+      GH_PAT: ${{ secrets.GH_PAT }}
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +40,33 @@ jobs:
           DO_COOKIE: ${{ secrets.DO_COOKIE }}
         run: python gpu_monitor.py
 
+      # Self-heal: a failed poll almost always means the server-side session
+      # died. Re-mint it the way a real browser would (remember-me re-auth in
+      # headless Chromium), persist the fresh cookies to the repo secrets, and
+      # re-poll in the same run — no human needed. See cookie_heal.py.
+      # Requires GH_PAT (fine-grained, Actions-secrets write); without it the
+      # heal is skipped, because a re-auth can rotate the remember-me token
+      # and an unpersisted rotation would strand the pipeline.
+      - name: Heal session (headless remember-me re-auth)
+        id: heal
+        if: steps.poll.outcome == 'failure' && env.GH_PAT != ''
+        continue-on-error: true
+        env:
+          DO_STATE: ${{ secrets.DO_STATE }}
+          COOKIE_OUT: ${{ runner.temp }}/cookie.txt
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+          python cookie_heal.py
+
+      - name: Re-poll with the healed session
+        id: repoll
+        if: steps.heal.outcome == 'success'
+        continue-on-error: true
+        run: |
+          echo "::add-mask::$(cat "${{ runner.temp }}/cookie.txt")"
+          DO_COOKIE="$(cat "${{ runner.temp }}/cookie.txt")" python gpu_monitor.py
+
       - name: Commit new data
         run: |
           git config user.name "gpu-monitor-bot"
@@ -51,8 +81,11 @@ jobs:
             git push
           fi
 
+      # Only fail (and email) when the self-heal couldn't recover — that's the
+      # rare case that genuinely needs a human (expired remember-me token:
+      # run refresh_cookie.py --login locally to re-bootstrap).
       - name: Surface poll failure
-        if: steps.poll.outcome == 'failure'
+        if: steps.poll.outcome == 'failure' && steps.repoll.outcome != 'success'
         run: |
-          echo "::error::Poll failed — DO_COOKIE has likely expired. A NO_DATA row was committed. Refresh the cookie and run ./refresh_cookie.sh"
+          echo "::error::Poll failed and self-heal did not recover. Re-bootstrap: run refresh_cookie.py --login locally (pushes fresh DO_COOKIE + DO_STATE)."
           exit 1

@@ -1,0 +1,38 @@
+name: cookie-heal
+
+# On-demand run of the session self-heal (cookie_heal.py). The poll workflow
+# runs the same script automatically when a poll fails; this manual entry
+# point exists for testing — especially `force: true`, which drops the session
+# cookie first to prove the remember-me re-auth path end-to-end.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Drop the session cookie first to force a remember-me re-auth"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  heal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright Chromium
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Heal session
+        env:
+          DO_STATE: ${{ secrets.DO_STATE }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          FORCE: ${{ inputs.force && '1' || '' }}
+        run: python cookie_heal.py
