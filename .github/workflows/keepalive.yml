@@ -1,16 +1,12 @@
 name: session-keepalive
 
-# Keeps the DO session from idle-dying. The session has a server-side idle
-# timeout that real browser page loads reset but GraphQL polls do not
-# (established 2026-08-16: sessions died overnight despite hourly polls, yet
-# survived indefinitely under the laptop's 30-min browser refreshes). This
-# replaces the laptop: load the GPU page in headless Chromium every 30 min.
-# Cookie values never change during browsing, so nothing needs writing back.
-#
-# Offset from the poll schedule (:07/:37) so a keep-alive lands between polls.
+# On-demand session liveness check. DISPROVEN THEORY (2026-08-17): the session
+# does NOT have an idle timeout — it has an absolute ~12h TTL. A keep-alive
+# page load every 30 min did not extend it one minute (minted 2026-08-16
+# 23:46Z, died between 11:15Z and 11:45Z next day, matching the 11.8h max
+# healthy streak in 5 weeks of CSV history). The 30-min schedule is therefore
+# removed; only a real login (password entry) renews the session.
 on:
-  schedule:
-    - cron: "22,52 * * * *"
   workflow_dispatch: {}
 
 permissions:
