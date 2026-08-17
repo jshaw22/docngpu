@@ -53,6 +53,8 @@ jobs:
         continue-on-error: true
         env:
           DO_STATE: ${{ secrets.DO_STATE }}
+          DO_EMAIL: ${{ secrets.DO_EMAIL }}
+          DO_PASSWORD: ${{ secrets.DO_PASSWORD }}
           COOKIE_OUT: ${{ runner.temp }}/cookie.txt
         run: |
           pip install playwright

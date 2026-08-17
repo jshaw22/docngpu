@@ -63,9 +63,10 @@ def main():
     cookies = json.loads(os.environ["DO_STATE"])
     old_rm = next((c["value"] for c in cookies
                    if c["name"] == "_digitalocean_remember_me"), None)
-    if not old_rm:
-        sys.exit("No _digitalocean_remember_me in DO_STATE — re-bootstrap: "
-                 "run refresh_cookie.py --login locally (it pushes DO_STATE)")
+    if not old_rm and not os.environ.get("DO_PASSWORD"):
+        sys.exit("No _digitalocean_remember_me in DO_STATE and no DO_PASSWORD "
+                 "— nothing can renew the session. Re-bootstrap: run "
+                 "refresh_cookie.py --login locally (it pushes DO_STATE)")
 
     if os.environ.get("FORCE") == "1":
         cookies = [c for c in cookies if c["name"] not in SESSION_SCOPED]
@@ -83,7 +84,30 @@ def main():
         page.goto(GPU_PAGE, wait_until="domcontentloaded", timeout=60_000)
 
         if "/login" in page.url:
-            print("bounced to /login — waiting for remember-me re-auth...")
+            # Sessions have an absolute ~12h TTL and only a real password
+            # login renews them. With the remember-me cookie present, DO
+            # serves the "welcome back" variant (a lone #password field);
+            # a fresh context gets the full #email + #password form. Fill
+            # whichever appears from DO_EMAIL/DO_PASSWORD and submit.
+            password = os.environ.get("DO_PASSWORD")
+            if not password:
+                sys.exit("HEAL FAILED: bounced to /login and DO_PASSWORD is "
+                         "not set — only a password login can renew the "
+                         "session. Configure DO_EMAIL/DO_PASSWORD secrets, or "
+                         "run refresh_cookie.py --login locally.")
+            print("bounced to /login — performing scripted login...")
+            page.wait_for_selector("#password, #email", timeout=20_000)
+            if page.query_selector("#email"):
+                email = os.environ.get("DO_EMAIL")
+                if not email:
+                    sys.exit("HEAL FAILED: got the full login form (no "
+                             "remember-me) but DO_EMAIL is not set")
+                print("full login form detected — filling email + password")
+                page.fill("#email", email)
+            else:
+                print("welcome-back variant detected — filling password only")
+            page.fill("#password", password)
+            page.click('button[type="submit"]')
             try:
                 page.wait_for_url(
                     lambda u: "cloud.digitalocean.com" in u and "/login" not in u,
@@ -91,10 +115,9 @@ def main():
                 )
             except PWTimeout:
                 page.screenshot(path="heal_debug.png")
-                sys.exit("HEAL FAILED: stuck on the login page — remember-me "
-                         "re-auth did not fire. Re-bootstrap: run "
-                         "refresh_cookie.py --login locally.")
-            print("re-auth fired; reloading the GPU page...")
+                sys.exit("HEAL FAILED: login did not complete (captcha, 2FA, "
+                         "or bad credentials?)")
+            print("login succeeded; reloading the GPU page...")
             page.goto(GPU_PAGE, wait_until="domcontentloaded", timeout=60_000)
 
         try:

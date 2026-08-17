@@ -1,38 +1,69 @@
 name: cookie-heal
 
-# On-demand run of the session self-heal (cookie_heal.py). The poll workflow
-# runs the same script automatically when a poll fails; this manual entry
-# point exists for testing — especially `force: true`, which drops the session
-# cookie first to prove the remember-me re-auth path end-to-end.
+# Proactive session renewal. DO sessions have an absolute ~12h TTL (proven
+# 2026-08-17) and only a real password login renews them, so every 8 hours we
+# force a fresh login (FORCE drops the session cookies first) and write the
+# new jar back to the secrets — the session is always renewed before it can
+# die, so polls never see a 401. The poll workflow's heal path stays as a
+# backup for anything that slips through.
+#
+# Requires DO_EMAIL/DO_PASSWORD (dedicated low-privilege team account) and
+# GH_PAT; scheduled runs skip quietly until those secrets are configured.
+# workflow_dispatch remains for manual runs and end-to-end testing.
 on:
+  schedule:
+    - cron: "52 0,8,16 * * *"
   workflow_dispatch:
     inputs:
       force:
-        description: "Drop the session cookie first to force a remember-me re-auth"
+        description: "Drop the session cookie first to force a full re-login"
         type: boolean
         default: false
 
 permissions:
   contents: read
 
+concurrency:
+  group: cookie-heal
+  cancel-in-progress: false
+
 jobs:
   heal:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DO_PASSWORD: ${{ secrets.DO_PASSWORD }}
     steps:
+      - name: Check configuration
+        id: config
+        run: |
+          if [ -z "$DO_PASSWORD" ] && [ "${{ github.event_name }}" = "schedule" ]; then
+            echo "DO_PASSWORD not configured — skipping scheduled renewal."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.config.outputs.configured == 'true'
 
       - uses: actions/setup-python@v5
+        if: steps.config.outputs.configured == 'true'
         with:
           python-version: "3.12"
 
       - name: Install Playwright Chromium
+        if: steps.config.outputs.configured == 'true'
         run: |
           pip install playwright
           playwright install --with-deps chromium
 
-      - name: Heal session
+      # Scheduled runs always force; manual runs force only when asked.
+      - name: Renew session
+        if: steps.config.outputs.configured == 'true'
         env:
           DO_STATE: ${{ secrets.DO_STATE }}
+          DO_EMAIL: ${{ secrets.DO_EMAIL }}
           GH_PAT: ${{ secrets.GH_PAT }}
-          FORCE: ${{ inputs.force && '1' || '' }}
+          FORCE: ${{ (github.event_name == 'schedule' || inputs.force) && '1' || '' }}
         run: python cookie_heal.py
