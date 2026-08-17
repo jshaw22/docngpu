@@ -1,0 +1,44 @@
+name: session-keepalive
+
+# Keeps the DO session from idle-dying. The session has a server-side idle
+# timeout that real browser page loads reset but GraphQL polls do not
+# (established 2026-08-16: sessions died overnight despite hourly polls, yet
+# survived indefinitely under the laptop's 30-min browser refreshes). This
+# replaces the laptop: load the GPU page in headless Chromium every 30 min.
+# Cookie values never change during browsing, so nothing needs writing back.
+#
+# Offset from the poll schedule (:07/:37) so a keep-alive lands between polls.
+on:
+  schedule:
+    - cron: "22,52 * * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+concurrency:
+  group: keepalive
+  cancel-in-progress: false
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright Chromium
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      # Fails (and emails) if the session is dead — that means a true logout,
+      # which needs a local re-bootstrap: ./.venv/bin/python refresh_cookie.py --login
+      - name: Load the GPU page to slide the session's idle timeout
+        env:
+          DO_STATE: ${{ secrets.DO_STATE }}
+        run: python cookie_probe.py
