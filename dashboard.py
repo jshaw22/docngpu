@@ -150,6 +150,34 @@ def day_ticks(columns):
     return tickvals, [lbl[:5] for lbl in tickvals]
 
 
+def gpu_family(label):
+    """Coarse family for grouping related rows: RTX4000/RTX6000 → RTX,
+    MI300X/MI325X/MI350X/MI355X → MI3xx, else the base model (B300, H100, ...)."""
+    base = label.split(" x")[0]
+    if base.startswith("RTX"):
+        return "RTX"
+    if base.startswith("MI3"):
+        return "MI3xx"
+    return base
+
+
+def family_grouped_order(scores):
+    """Row order that keeps GPU families together while still leading with
+    availability: families ranked by their best member's score (ties broken by
+    family total, then name), members within a family by score then label.
+    `scores` is a Series indexed by gpu_label; returns labels best-first."""
+    fams = scores.index.map(gpu_family)
+    fam_max = scores.groupby(fams).max()
+    fam_sum = scores.groupby(fams).sum()
+    return sorted(
+        scores.index,
+        key=lambda l: (
+            -fam_max[gpu_family(l)], -fam_sum[gpu_family(l)], gpu_family(l),
+            -scores[l], l,
+        ),
+    )
+
+
 df, failed_ts = load()
 
 st.title("🖥️  DigitalOcean GPU Droplet Availability")
@@ -203,7 +231,10 @@ with overview_tab:
         .apply(lambda s: ", ".join(sorted(s)))
     )
     snap["available_in"] = snap["gpu_label"].map(avail_regions).fillna("")
-    snap = snap.sort_values("regions_now", ascending=False)
+    # Group families together (B300s, RTXs, MI3xx, ...) while still leading
+    # with availability: available families first, ranked by their best member.
+    now_order = family_grouped_order(snap.set_index("gpu_label")["regions_now"])
+    snap = snap.set_index("gpu_label").loc[now_order].reset_index()
 
     n_types_avail = int((snap["regions_now"] > 0).sum())
     total_combos = int(now["available"].sum())
@@ -226,7 +257,10 @@ with overview_tab:
         marker_color="#21c45d", textposition="inside",
         insidetextanchor="start", constraintext="none", textfont_color="black",
     )
-    fig_now.update_yaxes(categoryorder="total ascending")
+    # Plotly draws the first y category at the bottom; reverse so the best
+    # family block sits on top.
+    fig_now.update_yaxes(categoryorder="array",
+                         categoryarray=list(reversed(now_order)))
     st.plotly_chart(fig_now, use_container_width=True)
 
     # Total combos over time: one point per poll, gaps where polls failed so
@@ -258,9 +292,9 @@ with overview_tab:
         df.groupby(["gpu_label", "ts_local"])["available"].sum().reset_index()
     )
     pivot = grid.pivot(index="gpu_label", columns="ts_local", values="available")
-    # Order rows so the most-available GPUs sit at the top.
-    order = pivot.sum(axis=1).sort_values(ascending=False).index
-    pivot = pivot.loc[order]
+    # Same family-grouped ordering as the bar chart, scored by all-time
+    # availability so the rows line up conceptually.
+    pivot = pivot.loc[family_grouped_order(pivot.sum(axis=1))]
     pivot = collapse_no_data_gaps(pivot, failed_ts)
     fig_time = px.imshow(
         mark_total_outages(pivot),
