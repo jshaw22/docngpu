@@ -162,20 +162,26 @@ def gpu_family(label):
 
 
 def family_grouped_order(scores):
-    """Row order that keeps GPU families together while still leading with
-    availability: families ranked by their best member's score (ties broken by
-    family total, then name), members within a family by score then label.
+    """Row order that keeps GPU families together — and, within a family, each
+    base model together (MI350X x1/x8 stay adjacent) — while still leading
+    with availability at every level: families ranked by their best member's
+    score (ties broken by family total, then name), models within a family the
+    same way, and members within a model by score then label.
     `scores` is a Series indexed by gpu_label; returns labels best-first."""
     fams = scores.index.map(gpu_family)
-    fam_max = scores.groupby(fams).max()
-    fam_sum = scores.groupby(fams).sum()
-    return sorted(
-        scores.index,
-        key=lambda l: (
-            -fam_max[gpu_family(l)], -fam_sum[gpu_family(l)], gpu_family(l),
-            -scores[l], l,
-        ),
-    )
+    models = scores.index.map(lambda l: l.split(" x")[0])
+    fam_max, fam_sum = scores.groupby(fams).max(), scores.groupby(fams).sum()
+    mod_max, mod_sum = scores.groupby(models).max(), scores.groupby(models).sum()
+
+    def key(label):
+        fam, model = gpu_family(label), label.split(" x")[0]
+        return (
+            -fam_max[fam], -fam_sum[fam], fam,
+            -mod_max[model], -mod_sum[model], model,
+            -scores[label], label,
+        )
+
+    return sorted(scores.index, key=key)
 
 
 df, failed_ts = load()
