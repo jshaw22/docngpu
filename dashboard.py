@@ -17,6 +17,7 @@ import os
 
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 import streamlit as st
 
 CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "availability.csv")
@@ -136,6 +137,40 @@ def collapse_no_data_gaps(pivot, failed_ts):
             label += " "
         cols[label] = column
     return pd.DataFrame(cols, index=pivot.index)
+
+
+def interval_heatmap(pivot, failed_ts, colorscale, zmax):
+    """Heatmap on a real time axis rather than one equal-width column per poll:
+    each poll's cell spans until the next poll attempt (the last one spans one
+    typical interval), so uneven poll spacing reads as it happened. Failed
+    polls in the window become blank columns, as in the categorical charts."""
+    events = sorted(
+        [(ts, ts) for ts in pivot.columns] + [(ts, None) for ts in failed_ts]
+    )
+    times = [ts for ts, _ in events]
+    grid = pd.concat(
+        [pivot[src] if src is not None else pd.Series(float("nan"), index=pivot.index)
+         for _, src in events],
+        axis=1,
+    )
+    grid.columns = times
+    gaps = pd.Series(times).diff().dropna()
+    step = gaps.median() if len(gaps) else pd.Timedelta(minutes=30)
+    # Plotly treats len(z cols)+1 x values as cell edges. Drop the tz so Plotly
+    # shows Pacific wall time instead of re-interpreting the offset.
+    edges = [t.tz_localize(None).to_pydatetime() for t in times + [times[-1] + step]]
+    text = [[f"{t:%m-%d %H:%M}" for t in times]] * len(grid.index)
+    fig = go.Figure(go.Heatmap(
+        z=mark_total_outages(grid).values, x=edges, y=list(grid.index),
+        customdata=grid.values, text=text,
+        colorscale=colorscale, zmin=OUTAGE, zmax=zmax, xgap=1,
+        hovertemplate="Poll=%{text}<br>GPU=%{y}<br># regions=%{customdata}"
+                      "<extra></extra>",
+        colorbar=dict(title="# regions", tickvals=list(range(zmax + 1))),
+    ))
+    fig.update_xaxes(side="top", title="Time (PT)")
+    fig.update_yaxes(autorange="reversed", title="GPU", automargin=True)
+    return fig
 
 
 def day_ticks(columns):
@@ -269,6 +304,46 @@ with overview_tab:
                          categoryarray=list(reversed(now_order)))
     st.plotly_chart(fig_now, use_container_width=True)
 
+    # Row order shared by both timelines, scored by all-time availability so
+    # the recent and full-history charts line up row for row.
+    grid = (
+        df.groupby(["gpu_label", "ts_local"])["available"].sum().reset_index()
+    )
+    pivot_all = grid.pivot(index="gpu_label", columns="ts_local", values="available")
+    time_order = family_grouped_order(pivot_all.sum(axis=1))
+    pivot_all = pivot_all.loc[time_order]
+
+    # Recent window on a true time axis — the all-time heatmap below squeezes
+    # months into equal-width poll columns, which hides what happened lately.
+    st.subheader("Availability over time — recent")
+    days = st.radio(
+        "Window", [1, 3, 7], index=1, horizontal=True,
+        format_func=lambda d: f"Past {d} day{'s' if d > 1 else ''}",
+        label_visibility="collapsed",
+    )
+    last_attempt = max([df["ts_local"].max(), *failed_ts])
+    cutoff = last_attempt - pd.Timedelta(days=days)
+    recent = pivot_all.loc[:, pivot_all.columns >= cutoff]
+    recent_failed = failed_ts[failed_ts >= cutoff]
+    if recent.shape[1] == 0:
+        st.info(f"No successful polls in the past {days} day(s).")
+    else:
+        fig_recent = interval_heatmap(
+            recent, recent_failed, OUTAGE_GREENS, SCALE_CAP
+        )
+        st.plotly_chart(fig_recent, use_container_width=True)
+        n_recent_failed = len(recent_failed)
+        failed_recent_note = (
+            f" {n_recent_failed} failed poll(s) show as blank columns."
+            if n_recent_failed else ""
+        )
+        st.caption(
+            f"{recent.shape[1]} poll(s) in the past {days} day(s). Same colors "
+            "as the full history below, but on a real time axis: each cell "
+            "runs from one poll to the next, so a wide cell means a long gap "
+            f"between polls, not a long-lived state.{failed_recent_note}"
+        )
+
     # Total combos over time: one point per poll, gaps where polls failed so
     # an outage reads as a hole in the line rather than a flat interpolation.
     st.subheader("Total GPU+region combos over time")
@@ -293,15 +368,8 @@ with overview_tab:
     )
 
     # Timeline heatmap: GPU (rows) x time (cols), color = # regions available.
-    st.subheader("Availability over time — all GPUs")
-    grid = (
-        df.groupby(["gpu_label", "ts_local"])["available"].sum().reset_index()
-    )
-    pivot = grid.pivot(index="gpu_label", columns="ts_local", values="available")
-    # Same family-grouped ordering as the bar chart, scored by all-time
-    # availability so the rows line up conceptually.
-    pivot = pivot.loc[family_grouped_order(pivot.sum(axis=1))]
-    pivot = collapse_no_data_gaps(pivot, failed_ts)
+    st.subheader("Availability over time — full history")
+    pivot = collapse_no_data_gaps(pivot_all, failed_ts)
     fig_time = px.imshow(
         mark_total_outages(pivot),
         color_continuous_scale=OUTAGE_GREENS, zmin=OUTAGE, zmax=SCALE_CAP,
