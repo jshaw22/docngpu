@@ -197,24 +197,21 @@ def gpu_family(label):
 
 
 def family_grouped_order(scores):
-    """Row order that keeps GPU families together — and, within a family, each
-    base model together (MI350X x1/x8 stay adjacent) — while still leading
-    with availability at every level: families ranked by their best member's
-    score (ties broken by family total, then name), models within a family the
-    same way, and members within a model by score then label.
+    """Row order that keeps GPU families together, ranking families by their
+    best member's availability score (ties broken by family total, then name)
+    so the most-available family leads. Within a family the order is fixed by
+    SKU rather than availability — models by name (MI300X, MI325X, MI350X,
+    MI355X; RTX4000 before RTX6000) and members by GPU count (x1 before x8) —
+    so rows don't reshuffle between polls.
     `scores` is a Series indexed by gpu_label; returns labels best-first."""
     fams = scores.index.map(gpu_family)
-    models = scores.index.map(lambda l: l.split(" x")[0])
     fam_max, fam_sum = scores.groupby(fams).max(), scores.groupby(fams).sum()
-    mod_max, mod_sum = scores.groupby(models).max(), scores.groupby(models).sum()
 
     def key(label):
-        fam, model = gpu_family(label), label.split(" x")[0]
-        return (
-            -fam_max[fam], -fam_sum[fam], fam,
-            -mod_max[model], -mod_sum[model], model,
-            -scores[label], label,
-        )
+        fam = gpu_family(label)
+        model, _, rest = label.partition(" x")   # "MI355X x8 (spot)" -> "8 (spot)"
+        count = float(rest.split()[0]) if rest else 1
+        return (-fam_max[fam], -fam_sum[fam], fam, model, count, label)
 
     return sorted(scores.index, key=key)
 
