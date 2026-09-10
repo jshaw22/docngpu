@@ -61,6 +61,15 @@ jobs:
           playwright install --with-deps chromium
           python cookie_heal.py
 
+      - name: Upload heal screenshot (on heal failure)
+        if: steps.heal.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: heal-debug
+          path: heal_debug.png
+          if-no-files-found: ignore
+          retention-days: 3
+
       - name: Re-poll with the healed session
         id: repoll
         if: steps.heal.outcome == 'success'

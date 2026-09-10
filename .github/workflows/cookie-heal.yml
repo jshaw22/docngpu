@@ -67,3 +67,15 @@ jobs:
           GH_PAT: ${{ secrets.GH_PAT }}
           FORCE: ${{ (github.event_name == 'schedule' || inputs.force) && '1' || '' }}
         run: python cookie_heal.py
+
+      # The heal script screenshots the page when a login stalls; keep it so
+      # a failure is diagnosable (captcha vs 2FA vs bad password). The email
+      # is masked by DO on the welcome-back form; no secrets are on screen.
+      - name: Upload login screenshot (on failure)
+        if: failure() && steps.config.outputs.configured == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: heal-debug
+          path: heal_debug.png
+          if-no-files-found: ignore
+          retention-days: 3
