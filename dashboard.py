@@ -26,26 +26,28 @@ CSV_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "availabilit
 # common low counts (0-3) stay visually distinct instead of washing out.
 SCALE_CAP = 5
 
-# Red is reserved for total outages: a poll where NOTHING in the chart was
-# available (vs. blank/transparent = poll failed, and white/dark = just this
-# row sold out). Zeros in those columns are replaced with the OUTAGE sentinel
-# so a colorscale breakpoint can catch them without touching ordinary zeros.
+# Reds are reserved for "sold out": light red = just this row sold out, solid
+# red = a total outage, a poll where NOTHING in the chart was available (vs.
+# blank/transparent = poll failed). Zeros in total-outage columns are replaced
+# with the OUTAGE sentinel so a colorscale breakpoint can catch them without
+# touching ordinary zeros.
 OUTAGE_RED = "#d13438"
+SOLDOUT_RED = "#f8d7da"
 OUTAGE = -1
 
-# Greens ramp over [-1, SCALE_CAP]: -1 → red, 0 → white, 1+ → light-to-dark
-# green. Values are whole counts, so breakpoints at ±0.5 never split a value.
+# Greens ramp over [-1, SCALE_CAP]: -1 → red, 0 → light red, 1+ → light-to-
+# dark green. Values are whole counts, so breakpoints at ±0.5 never split one.
 _SPAN = SCALE_CAP - OUTAGE
 OUTAGE_GREENS = [
     (0.0, OUTAGE_RED), (0.5 / _SPAN, OUTAGE_RED),
-    (0.5 / _SPAN, "#f7fcf5"), (1.5 / _SPAN, "#f7fcf5"),
-    (2.0 / _SPAN, "#c7e9c0"), (1.0, "#00441b"),
+    (0.5 / _SPAN, SOLDOUT_RED), (1.5 / _SPAN, SOLDOUT_RED),
+    (1.5 / _SPAN, "#e0f3db"), (2.0 / _SPAN, "#c7e9c0"), (1.0, "#00441b"),
 ]
 
-# Same idea for the binary region timeline: -1 → red, 0 → dark, 1 → green.
+# Same idea for the binary region timeline: -1 → red, 0 → light red, 1 → green.
 OUTAGE_BINARY = [
     (0.0, OUTAGE_RED), (0.25, OUTAGE_RED),
-    (0.25, "#2b2b3b"), (0.75, "#2b2b3b"),
+    (0.25, SOLDOUT_RED), (0.75, SOLDOUT_RED),
     (0.75, "#21c45d"), (1.0, "#21c45d"),
 ]
 
@@ -388,7 +390,7 @@ with overview_tab:
     st.caption(
         f"Each cell = how many of the {n_regions} GPU regions had that GPU "
         f"available at that poll (color capped at {SCALE_CAP}+). Greener = more "
-        "widely available; white = that GPU sold out; red column = nothing "
+        "widely available; light red = that GPU sold out; red column = nothing "
         "available anywhere. Blank ✕ columns = failed polls, collapsed to one "
         "column per outage however long it ran (hover for the span). Fills "
         "in hourly."
@@ -438,7 +440,7 @@ with detail_tab:
                           "<extra></extra>",
         )
         st.plotly_chart(fig, use_container_width=True)
-        st.caption("Green = available, dark = sold out, red = sold out in "
+        st.caption("Green = available, light red = sold out, solid red = sold out in "
                    "every region at once, blank ✕ = failed polls (one column "
                    "per outage, however long). Each column is one poll.")
 
